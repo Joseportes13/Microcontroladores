@@ -74,11 +74,17 @@ int main()
 
 int Func_ESTADO_ERROR(void)
 {
+    static int led_status1 = 0;
+    static int led_status2 = 0;
     for (;;)
     {
-        inout.Led = TRUE; // parpadeo de led en caso de error
+        led_status1 = inout.Led;
+        inout.Led = led_status2;
+        led_status2 = led_status1;
+        HAL_Delay(199);
     }
 }
+
 int Func_ESTADO_ABIERTO(void)
 {
     ESTADO_ANTERIOR = ESTADO_ACTUAL;
@@ -104,8 +110,9 @@ int Func_ESTADO_CERRADO(void)
 {
     ESTADO_ANTERIOR = ESTADO_ACTUAL;
     ESTADO_ACTUAL = ESTADO_CERRADO;
-    inout.Mc = FALSE;
-    inout.Ma = FALSE;
+    inout.Mc = 0;
+    inout.Ma = 0;
+    inout.Led = 1;
 
     for (;;)
     {
@@ -117,6 +124,23 @@ int Func_ESTADO_CERRADO(void)
 }
 int Func_ESTADO_ABRIENDO(void)
 {
+    ESTADO_ANTERIOR = ESTADO_ACTUAL;
+    ESTADO_ACTUAL = ESTADO_ABRIENDO;
+    inout.Led = FALSE;
+    inout.Mc = FALSE;
+    inout.Ma = TRUE;
+
+    for (;;)
+    {
+        if (inout.Sa == TRUE)
+        {
+            return ESTADO_ABIERTO;
+        }
+        else if (inout.Bc == TRUE)
+        {
+            return ESTADO_CERRANDO;
+        }
+    }
 }
 int Func_ESTADO_CERRANDO(void)
 {
@@ -124,6 +148,7 @@ int Func_ESTADO_CERRANDO(void)
     ESTADO_ACTUAL = ESTADO_CERRANDO;
     inout.Mc = TRUE;
     inout.Ma = FALSE;
+    inout.Led = FALSE;
 
     for (;;)
     {
@@ -131,16 +156,38 @@ int Func_ESTADO_CERRANDO(void)
         {
             return ESTADO_CERRADO;
         }
+        else if (inout.Ba == TRUE)
+        {
+            return ESTADO_ABRIENDO;
+        }
     }
 }
 int Func_ESTADO_INTERMEDIO(void)
 {
+    ESTADO_ANTERIOR = ESTADO_ACTUAL;
+    ESTADO_ACTUAL = ESTADO_INTERMEDIO;
+    inout.Mc = FALSE;
+    inout.Ma = 0;
+    inout.Led = TRUE;
+    for (;;)
+    {
+        if ((inout.Ba == TRUE))
+        {
+            return ESTADO_ABRIENDO;
+        }
+
+        if ((inout.Bc == TRUE))
+        {
+            return ESTADO_CERRANDO;
+        }
+    }
 }
 int Func_ESTADO_INTI(void)
 {
     ESTADO_ANTERIOR = ESTADO_ACTUAL;
     ESTADO_ACTUAL = ESTADO_INIT;
 
+    inout.Led = 1;
     inout.Ma = FALSE;
     inout.Mc = FALSE;
 
@@ -148,15 +195,17 @@ int Func_ESTADO_INTI(void)
     {
         return ESTADO_ERROR; // Error
     }
-    if (inout.Sa == inTrue)
+    if ((inout.Sa == 1) && (inout.Sc == 0))
     {
         return ESTADO_ABIERTO;
     }
-    if ()
+    if ((inout.Sc == 1) && (inout.Sa == 0))
     {
+        return ESTADO_CERRADO;
     }
-    if ()
+    if ((inout.Sa == 0) && (inout.Sc == 0))
     {
+        return ESTADO_INTERMEDIO;
     }
 }
 
